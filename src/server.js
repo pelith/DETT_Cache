@@ -1,6 +1,7 @@
 import fs from 'fs'
 import path from 'path'
 import rimraf from 'rimraf'
+import NetlifyAPI from 'netlify'
 
 import git from 'simple-git'
 import gitP from 'simple-git/promise'
@@ -16,6 +17,10 @@ const outputPath = 'dist'
 const outputJsonPath = path.join(outputPath, 'output.json')
 const outputCachePath = path.join(outputPath, 's')
 const outputPageCachePath = path.join(outputPath, 'p')
+
+const netlifyPath = 'netlify'
+const netlifyCachePath = path.join(netlifyPath, 's')
+const netlifyPageCachePath = path.join(netlifyPath, 'p')
 
 const ghPath = 'gh-pages'
 const ghCachePath = path.join(ghPath, 's')
@@ -77,7 +82,7 @@ const server = async () => {
 
   // ############################################
   // #### Commit & push
-
+  /*
   await rsyncCopyDir(outputCachePath, ghCachePath)
   await rsyncCopyDir(outputPageCachePath, ghPageCachePath)
 
@@ -92,6 +97,20 @@ const server = async () => {
     // await cloudflarePurgeCache(process.env.CF_EMAIL, process.env.CF_KEY, process.env.CF_ZONE_ID)
     //       .then(console.log('#Cloudflare purge cache Done.'))
   }
+  */
+
+  // ############################################
+  // #### Update Netlify
+
+  if (!fs.existsSync(netlifyPath)) fs.mkdirSync(netlifyPath)
+
+  await rsyncCopyDir(ghPath, netlifyPath)
+  await rsyncCopyDir(outputCachePath, netlifyCachePath)
+  await rsyncCopyDir(outputPageCachePath, netlifyPageCachePath)
+
+  const client = new NetlifyAPI(process.env.NETLIFY_KEY)
+  await client.deploy(process.env.NETLIFY_SITE_ID, netlifyPath).then(console.log('#Deployed to Netlify.')) // limit: 3 deploys/minute
+
 
   const hrend = process.hrtime(hrstart)
   console.info(`Execution time (hr): %ds %dms`, hrend[0], hrend[1] / 1000000)
