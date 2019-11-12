@@ -90,7 +90,10 @@ const saveCommentCache = async () => {
     await cacheData.reduce( async (n,p) => {
       await n
       const _p = await p
-      comments = comments.concat(JSON.parse(JSON.stringify(_p[0])))
+      let temp = JSON.parse(JSON.stringify(_p[0]))
+      temp.transaction.nonce = null
+      temp.block = []
+      comments = comments.concat(temp)
     }, Promise.resolve())
 
     const filePath = path.join(outputCommentCachePath, tx + '.json')
