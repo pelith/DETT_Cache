@@ -85,9 +85,10 @@ const server = async () => {
 
   // ############################################
   // #### Commit & push
-  /*
+  
   await rsyncCopyDir(outputCachePath, ghCachePath)
   await rsyncCopyDir(outputPageCachePath, ghPageCachePath)
+  await rsyncCopyDir(outputCommentCachePath, ghCommentCachePath)
 
   await gitP(__dirname + '/../gh-pages/').add('.')
   await gitP(__dirname + '/../gh-pages/').commit("Add cache page")
@@ -97,14 +98,14 @@ const server = async () => {
     await gitP(__dirname + '/../gh-pages/').push(['-u', 'origin', 'gh-pages'])
           .then(console.log('#Push Done.'))
 
-    // await cloudflarePurgeCache(process.env.CF_EMAIL, process.env.CF_KEY, process.env.CF_ZONE_ID)
-    //       .then(console.log('#Cloudflare purge cache Done.'))
+    if (process.env.CF_KEY)
+      await cloudflarePurgeCache(process.env.CF_EMAIL, process.env.CF_KEY, process.env.CF_ZONE_ID)
+            .then(console.log('#Cloudflare purge cache Done.'))
   }
-  */
 
   // ############################################
   // #### Update Netlify
-
+  /*
   if (!fs.existsSync(netlifyPath)) fs.mkdirSync(netlifyPath)
 
   await rsyncCopyDir(ghPath, netlifyPath)
@@ -114,7 +115,7 @@ const server = async () => {
 
   const client = new NetlifyAPI(process.env.NETLIFY_KEY)
   await client.deploy(process.env.NETLIFY_SITE_ID, netlifyPath).then(console.log('#Deployed to Netlify.')) // limit: 3 deploys/minute
-
+  */
 
   const hrend = process.hrtime(hrstart)
   console.info(`Execution time (hr): %ds %dms`, hrend[0], hrend[1] / 1000000)
