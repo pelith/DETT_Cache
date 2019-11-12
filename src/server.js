@@ -17,14 +17,17 @@ const outputPath = 'dist'
 const outputJsonPath = path.join(outputPath, 'output.json')
 const outputCachePath = path.join(outputPath, 's')
 const outputPageCachePath = path.join(outputPath, 'p')
+const outputCommentCachePath = path.join(outputPath, 'c')
 
 const netlifyPath = 'netlify'
 const netlifyCachePath = path.join(netlifyPath, 's')
 const netlifyPageCachePath = path.join(netlifyPath, 'p')
+const netlifyCommentCachePath = path.join(netlifyPath, 'c')
 
 const ghPath = 'gh-pages'
 const ghCachePath = path.join(ghPath, 's')
 const ghPageCachePath = path.join(ghPath, 'p')
+const ghCommentCachePath = path.join(ghPath, 'c')
 
 const clone = async () => {
   //delete gh-pages folder
@@ -107,6 +110,7 @@ const server = async () => {
   await rsyncCopyDir(ghPath, netlifyPath)
   await rsyncCopyDir(outputCachePath, netlifyCachePath)
   await rsyncCopyDir(outputPageCachePath, netlifyPageCachePath)
+  await rsyncCopyDir(outputCommentCachePath, netlifyCommentCachePath)
 
   const client = new NetlifyAPI(process.env.NETLIFY_KEY)
   await client.deploy(process.env.NETLIFY_SITE_ID, netlifyPath).then(console.log('#Deployed to Netlify.')) // limit: 3 deploys/minute

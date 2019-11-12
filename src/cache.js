@@ -162,9 +162,8 @@ export const cache = async (updateAccess) => {
     fromBlock = +milestones[milestones.length-1].split('-')[0]
 
   let events = []
-  const step = 10000
-  for (let start = fromBlock*1 ; start < currentHeight ; start+=(step+1)) {
-    events = await mergedArticles(events, start, start+step)
+  for (let start = fromBlock*1 ; start < currentHeight ; start+=(dett.step+1)) {
+    events = await mergedArticles(events, start, start+dett.step)
   }
 
   // delete lastest cache page block's part

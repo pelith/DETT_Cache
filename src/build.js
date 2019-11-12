@@ -13,6 +13,7 @@ const outputPath = 'dist'
 const outputJsonPath = path.join(outputPath, 'output.json')
 const outputCachePath = path.join(outputPath, 's')
 const outputPageCachePath = path.join(outputPath, 'p')
+const outputCommentCachePath = path.join(outputPath, 'c')
 
 const ghPath = 'gh-pages'
 const ghCacheTemplatePath = path.join(ghPath, 'cache.html')
@@ -62,6 +63,41 @@ const savePageCache = () => {
   }
 }
 
+const saveCommentCache = async () => {
+  // if exist create output folder
+  if (!(fs.existsSync(outputCommentCachePath) && fs.lstatSync(outputCommentCachePath).isDirectory()))
+    fs.mkdirSync(outputCommentCachePath)
+
+  const pageTx = Object.keys(shortLinks)
+
+  let events = []
+  const currentHeight = dett.currentHeight
+  for (let start = dett.fromBlock*1 ; start < currentHeight ; start+=(dett.step+1)) {
+    events = await dett.mergedComments(events, start, start+dett.step)
+  }
+
+  pageTx.forEach(async (tx) => {
+    const cacheData = await events.filter((event) => {return tx == event.returnValues.origin}).map(async (event) => {
+      const [comment] = await Promise.all([
+        dett.getComment(event),
+      ])
+
+      return [comment]
+    })
+
+    let comments = []
+
+    await cacheData.reduce( async (n,p) => {
+      await n
+      const _p = await p
+      comments = comments.concat(JSON.parse(JSON.stringify(_p[0])))
+    }, Promise.resolve())
+
+    const filePath = path.join(outputCommentCachePath, tx + '.json')
+    fs.writeFileSync(filePath, JSON.stringify(comments), 'utf8')
+  })
+}
+
 const generateShortLinkCachePage = async (tx) => {
   const article = await dett.getArticle(tx)
   // NOTE THE POTENTIAL XSS HERE!!
@@ -87,7 +123,7 @@ const generateShortLinkCachePage = async (tx) => {
 
   const cacheFile = template.replace(reg, (matched) => {
     return cacheMeta[matched]
-  });
+  })
 
   const filePath = path.join(outputCachePath, shortLinks[tx] + '.html')
   await fs.writeFileSync(filePath, cacheFile, 'utf8')
@@ -130,6 +166,7 @@ export const build = async () => {
 
   saveLocalStorage()
   savePageCache()
+  saveCommentCache()
 
   console.log('#Generate Cache Page Done.')
 }
