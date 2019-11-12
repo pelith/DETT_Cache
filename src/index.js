@@ -12,7 +12,7 @@ const start = async () => {
 }
 
 const main = async () => {
-  console.log("⚠️  Warning: Only use for LOOM_BBS Dev")
+  console.log("⚠️  Warning: Only use for DETT Dev")
   console.log("⚠️  Warning: use `npm run server` to Generate Cache")
 
   try {
