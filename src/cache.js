@@ -8,6 +8,16 @@ import { sitemapIntro, sitemapWrite, sitemapFinalize } from './sitemap.js'
 import Dett from './lib/dett.js'
 import LoomProvider from './loom.js'
 import ShortURL from './lib/shortURL.js'
+import db from '../models/index.js'
+
+const { Article, CommentEvent, Height } = db
+
+async function initalize() {
+  await Article.sync()
+  await CommentEvent.sync()
+  await Height.sync()
+}
+initalize()
 
 let dett = null
 let loomWeb3 = null

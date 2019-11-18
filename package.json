@@ -32,10 +32,12 @@
         "linkify-it": "^2.1.0",
         "loom-js": "^1.55.0",
         "morgan": "^1.9.1",
+        "mysql2": "^2.0.0",
         "netlify": "^2.4.8",
         "p-ratelimit": "^0.10.0",
         "rimraf": "^2.6.3",
         "rsyncwrapper": "^3.0.1",
+        "sequelize": "^5.21.2",
         "simple-git": "^1.113.0",
         "url-parse": "^1.4.7",
         "web3": "1.0.0-beta.37"
