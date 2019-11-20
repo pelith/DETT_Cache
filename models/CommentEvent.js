@@ -7,6 +7,10 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: false,
       unique: true,
     },
+    block_number: {
+      type: DataTypes.BIGINT(64),
+      allowNull: false,
+    },
     txid: {
       type: DataTypes.STRING(200),
       allowNull: false,
@@ -16,10 +20,11 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.STRING(200),
       allowNull: false,
     },
-    event: DataTypes.TEXT(),
+    event: {
+      type: DataTypes.TEXT(),
+    }
   }, {
     tableName: 'comment_event',
-    underscored: true,
   })
 
   CommentEvent.associate = function(models) {

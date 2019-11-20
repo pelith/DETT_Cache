@@ -108,6 +108,28 @@ const cacheArticles = async () => {
   await Height.update({ last_block_height: dett.currentHeight - dett.step }, { where: { tag: 'articles' } })
 }
 
+const cacheCommentEvents = async () => {
+  const previousHeight = (await Height.findOrCreate({ where: { tag: 'comments' } }))[0].dataValues.last_block_height
+  let fromBlock = previousHeight ? previousHeight : dett.fromBlock
+  let events = []
+
+  for (let start = +fromBlock ; start < dett.currentHeight ; start+=(dett.step+1)) {
+    events = await dett.mergedComments(events, start, start+dett.step)
+  }
+
+  events.forEach(async (event) => {
+    await CommentEvent.findOrCreate({
+      where: {
+        block_number: event.blockNumber,
+        txid: event.transactionHash,
+        article_txid: event.returnValues.origin,
+        event: JSON.stringify(event),
+      }
+    })
+  })
+
+  await Height.update({ last_block_height: dett.currentHeight - dett.step }, { where: { tag: 'comments' } })
+}
 
 export const cache = async (updateAccess) => {
   // ############################################
@@ -129,6 +151,7 @@ export const cache = async (updateAccess) => {
   loomWeb3 = dett.loomProvider.library
 
   await cacheArticles()
+  await cacheCommentEvents()
   await saveSitemap()
 }
 
