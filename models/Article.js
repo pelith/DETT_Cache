@@ -7,7 +7,7 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: false,
       unique: true,
     },
-    blockNumber: {
+    block_number: {
       type: DataTypes.BIGINT(64),
       allowNull: false,
     },

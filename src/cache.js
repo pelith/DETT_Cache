@@ -77,10 +77,9 @@ const cacheArticles = async () => {
 
   const previousHeight = (await Height.findOrCreate({ where: { tag: 'articles' } }))[0].dataValues.last_block_height
   let fromBlock = previousHeight ? previousHeight : dett.fromBlock
-  const currentHeight = await loomWeb3.eth.getBlockNumber()
-
   let events = []
-  for (let start = fromBlock*1 ; start < currentHeight ; start+=(dett.step+1)) {
+
+  for (let start = +fromBlock ; start < dett.currentHeight ; start+=(dett.step+1)) {
     events = await dett.mergedArticles(events, start, start+dett.step)
   }
 
@@ -99,14 +98,14 @@ const cacheArticles = async () => {
 
     await Article.findOrCreate({
       where: {
-        blockNumber: blockNumber,
+        block_number: blockNumber,
         txid: tx,
         short_link: loomWeb3.utils.hexToUtf8(link),
       }
     })
   }
 
-  await Height.update({ last_block_height: currentHeight - dett.step }, { where: { tag: 'articles' } })
+  await Height.update({ last_block_height: dett.currentHeight - dett.step }, { where: { tag: 'articles' } })
 }
 
 

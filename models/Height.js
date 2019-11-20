@@ -15,12 +15,10 @@ module.exports = (sequelize, DataTypes) => {
     last_block_height: {
       type: DataTypes.BIGINT(64),
       allowNull: false,
-      unique: true,
       defaultValue: 0,
     }
   }, {
     tableName: 'height',
-    underscored: true,
   })
 
   Height.associate = function(models) {
