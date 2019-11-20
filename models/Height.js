@@ -7,10 +7,16 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: false,
       unique: true,
     },
+    tag: {
+      type: DataTypes.STRING(120),
+      allowNull: false,
+      unique: true,
+    },
     last_block_height: {
       type: DataTypes.BIGINT(64),
       allowNull: false,
       unique: true,
+      defaultValue: 0,
     }
   }, {
     tableName: 'height',

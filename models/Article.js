@@ -7,18 +7,21 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: false,
       unique: true,
     },
+    blockNumber: {
+      type: DataTypes.BIGINT(64),
+      allowNull: false,
+    },
     txid: {
       type: DataTypes.STRING(200),
       allowNull: false,
       unique: true,
     },
-    shortLink: {
+    short_link: {
       type: DataTypes.STRING(32),
       unique: true,
     }
   }, {
     tableName: 'article',
-    underscored: true,
   })
 
   Article.associate = function(models) {
