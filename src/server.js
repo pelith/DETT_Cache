@@ -95,27 +95,34 @@ const server = async () => {
 
   const status = await gitP(__dirname + '/../gh-pages/').status()
   if (status.behind || status.ahead) {
-    await gitP(__dirname + '/../gh-pages/').push(['-u', 'origin', 'gh-pages'])
-          .then(console.log('#Push Done.'))
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('#Dev Mode, Disable Pushing.')
+    }
+    else {
+      await gitP(__dirname + '/../gh-pages/').push(['-u', 'origin', 'gh-pages'])
+            .then(console.log('#Push Done.'))
 
-    if (process.env.CF_KEY)
-      await cloudflarePurgeCache(process.env.CF_EMAIL, process.env.CF_KEY, process.env.CF_ZONE_ID)
-            .then(console.log('#Cloudflare purge cache Done.'))
+      if (process.env.CF_KEY)
+        await cloudflarePurgeCache(process.env.CF_EMAIL, process.env.CF_KEY, process.env.CF_ZONE_ID)
+              .then(console.log('#Cloudflare purge cache Done.'))
+    }
   }
 
   // ############################################
   // #### Update Netlify
-  /*
-  if (!fs.existsSync(netlifyPath)) fs.mkdirSync(netlifyPath)
+  
+  if (process.env.NETLIFY_KEY && process.env.NETLIFY_SITE_ID) {
+    if (!fs.existsSync(netlifyPath)) fs.mkdirSync(netlifyPath)
 
-  await rsyncCopyDir(ghPath, netlifyPath)
-  await rsyncCopyDir(outputCachePath, netlifyCachePath)
-  await rsyncCopyDir(outputPageCachePath, netlifyPageCachePath)
-  await rsyncCopyDir(outputCommentCachePath, netlifyCommentCachePath)
+    await rsyncCopyDir(ghPath, netlifyPath)
+    await rsyncCopyDir(outputCachePath, netlifyCachePath)
+    await rsyncCopyDir(outputPageCachePath, netlifyPageCachePath)
+    await rsyncCopyDir(outputCommentCachePath, netlifyCommentCachePath)
 
-  const client = new NetlifyAPI(process.env.NETLIFY_KEY)
-  await client.deploy(process.env.NETLIFY_SITE_ID, netlifyPath).then(console.log('#Deployed to Netlify.')) // limit: 3 deploys/minute
-  */
+    const client = new NetlifyAPI(process.env.NETLIFY_KEY)
+    await client.deploy(process.env.NETLIFY_SITE_ID, netlifyPath).then(console.log('#Deployed to Netlify.')) // limit: 3 deploys/minute
+  }
+  
 
   const hrend = process.hrtime(hrstart)
   console.info(`Execution time (hr): %ds %dms`, hrend[0], hrend[1] / 1000000)
