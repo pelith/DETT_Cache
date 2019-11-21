@@ -1,15 +1,28 @@
+import dotenv from 'dotenv/config'
 import Web3 from 'web3'
 import path from 'path'
 import fs from 'fs'
 import crypto from 'crypto'
 
+import { sitemapIntro, sitemapWrite, sitemapFinalize } from './sitemap.js'
 import Dett from './lib/dett.js'
 import LoomProvider from './loom.js'
 import { parseText, parseUser, htmlEntities, formatPttDateTime } from './lib/utils.js'
+import db from '../models'
+
+const { Article, CommentEvent, Height } = db
+
+async function initalize() {
+  await Article.sync()
+  await CommentEvent.sync()
+  await Height.sync()
+}
+initalize()
 
 let dett = null
 
 const outputPath = 'dist'
+const sitemapPath = path.join(outputPath, 'sitemap.xml')
 const outputJsonPath = path.join(outputPath, 'output.json')
 const outputCachePath = path.join(outputPath, 's')
 const outputPageCachePath = path.join(outputPath, 'p')
@@ -18,7 +31,6 @@ const outputCommentCachePath = path.join(outputPath, 'c')
 const ghPath = 'gh-pages'
 const ghCacheTemplatePath = path.join(ghPath, 'cache.html')
 
-let shortLinks = {}
 let jsonData = {}
 
 function checksum(str, algorithm, encoding) {
@@ -29,16 +41,10 @@ function checksum(str, algorithm, encoding) {
 }
 
 const loadLocalStorage = () => {
-  if (!(fs.existsSync(outputJsonPath) && fs.lstatSync(outputJsonPath).isFile()))
-    throw "output file is not exist"
-
-  const rawData = fs.readFileSync(outputJsonPath)
-  jsonData = JSON.parse(rawData)
-
-  if (!jsonData.hasOwnProperty('shortLinks'))
-    throw "invalid storage file"
-
-  shortLinks = jsonData.shortLinks
+  if (!(fs.existsSync(outputPath) && fs.lstatSync(outputPath).isDirectory()))
+    fs.mkdirSync(outputPath)
+  if (fs.existsSync(outputJsonPath) && fs.lstatSync(outputJsonPath).isFile())
+    jsonData = JSON.parse(fs.readFileSync(outputJsonPath))
 
   if (!jsonData.hasOwnProperty('checksum'))
     jsonData.checksum = ""
@@ -49,12 +55,31 @@ const saveLocalStorage = () => {
   fs.writeFileSync(outputJsonPath, rawData, 'utf8');
 }
 
-const savePageCache = () => {
+const buildSitemap = async () => {
+  const prefix = 'https://dett.cc'
+  const f = fs.openSync(sitemapPath, 'w')
+  sitemapIntro(f)
+  {['/', '/about'].forEach(slug => {
+    sitemapWrite(f, prefix + slug)
+  })}
+  fs.writeSync(f, '  <!-- Static pages below are generated; do not edit -->\n')
+  const articals = await Article.findAll()
+  Object.values(articals).forEach(artical => {
+    sitemapWrite(f, prefix + '/s/' + artical.short_link)
+  })
+  sitemapFinalize(f)
+}
+
+const buildPageCache = async () => {
   // if exist create output folder
   if (!(fs.existsSync(outputPageCachePath) && fs.lstatSync(outputPageCachePath).isDirectory()))
     fs.mkdirSync(outputPageCachePath)
 
-  const pageTx = Object.keys(shortLinks)
+  const articals = await Article.findAll()
+  const pageTx = articals.map(artical => {
+    return artical.txid
+  })
+
   const pageSize = Math.ceil(pageTx.length / 20)
   for (let page = 0 ; page < pageSize ; page++) {
     const cacheData = pageTx.slice(page*20, page*20+19)
@@ -63,23 +88,19 @@ const savePageCache = () => {
   }
 }
 
-const saveCommentCache = async () => {
+const buildCommentCache = async () => {
   // if exist create output folder
   if (!(fs.existsSync(outputCommentCachePath) && fs.lstatSync(outputCommentCachePath).isDirectory()))
     fs.mkdirSync(outputCommentCachePath)
 
-  const pageTx = Object.keys(shortLinks)
+  const articals = await Article.findAll()
 
-  let events = []
-  const currentHeight = dett.currentHeight
-  for (let start = dett.fromBlock*1 ; start < currentHeight ; start+=(dett.step+1)) {
-    events = await dett.mergedComments(events, start, start+dett.step)
-  }
-
-  pageTx.forEach(async (tx) => {
-    const cacheData = await events.filter((event) => {return tx == event.returnValues.origin}).map(async (event) => {
+  
+  const builder = articals.map(async (artical) => {
+    const cacheEvents = await CommentEvent.findAll({ where: { article_txid: artical.txid } })
+    const cacheData = await cacheEvents.map(async (cacheEvent) => {
       const [comment] = await Promise.all([
-        dett.getComment(event),
+        dett.getComment(JSON.parse(cacheEvent.event)),
       ])
 
       return [comment]
@@ -87,7 +108,7 @@ const saveCommentCache = async () => {
 
     let comments = []
 
-    await cacheData.reduce( async (n,p) => {
+    await cacheData.reduce(async (n,p) => {
       await n
       const _p = await p
       let temp = JSON.parse(JSON.stringify(_p[0]))
@@ -96,16 +117,18 @@ const saveCommentCache = async () => {
       comments = comments.concat(temp)
     }, Promise.resolve())
 
-    const filePath = path.join(outputCommentCachePath, tx + '.json')
+    const filePath = path.join(outputCommentCachePath, artical.txid + '.json')
     fs.writeFileSync(filePath, JSON.stringify(comments), 'utf8')
   })
+
+  await Promise.all(builder)
 }
 
-const generateShortLinkCachePage = async (tx) => {
+const generateShortLinkCachePage = async (tx, shortLink) => {
   const article = await dett.getArticle(tx)
   // NOTE THE POTENTIAL XSS HERE!!
   const titleEscaped = htmlEntities(article.title)
-  const url = 'https://dett.cc/' + 's/' + shortLinks[tx]
+  const url = 'https://dett.cc/' + 's/' + shortLink
   // is trimming out title from desc the intended behavior??
   const description = htmlEntities(parseText(article.content, 160)).replace(/\n|\r/g, ' ')
 
@@ -128,7 +151,7 @@ const generateShortLinkCachePage = async (tx) => {
     return cacheMeta[matched]
   })
 
-  const filePath = path.join(outputCachePath, shortLinks[tx] + '.html')
+  const filePath = path.join(outputCachePath, shortLink + '.html')
   await fs.writeFileSync(filePath, cacheFile, 'utf8')
 }
 
@@ -160,16 +183,18 @@ export const build = async () => {
   if (shouldUpdate)
     jsonData.checksum = _checksum
 
-  for (const tx of Object.keys(shortLinks)) {
-    const shortLinkPath = path.join(outputCachePath, shortLinks[tx]+'.html')
+  const articles = await Article.findAll()
+  for (const article of articles) {
+    const shortLinkPath = path.join(outputCachePath, article.txid+'.html')
 
     if (shouldUpdate || !(fs.existsSync(shortLinkPath) && fs.lstatSync(shortLinkPath).isFile()))
-      await generateShortLinkCachePage(tx, shortLinks[tx])
+      await generateShortLinkCachePage(article.txid, article.short_link)
   }
 
   saveLocalStorage()
-  savePageCache()
-  saveCommentCache()
+  await buildSitemap()
+  await buildPageCache()
+  await buildCommentCache()
 
   console.log('#Generate Cache Page Done.')
 }

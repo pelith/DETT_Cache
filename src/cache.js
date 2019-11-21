@@ -4,7 +4,6 @@ import { pRateLimit } from 'p-ratelimit'
 import fs from 'fs'
 import path from 'path'
 
-import { sitemapIntro, sitemapWrite, sitemapFinalize } from './sitemap.js'
 import Dett from './lib/dett.js'
 import LoomProvider from './loom.js'
 import ShortURL from './lib/shortURL.js'
@@ -29,9 +28,6 @@ const rpcRateLimiter = pRateLimit({
   concurrency: 1,
 })
 
-const outputPath = 'dist'
-const sitemapPath = path.join(outputPath, 'sitemap.xml')
-
 const addShortLink = async (tx) => {
   const shortLink = ShortURL.encode(dett.cacheweb3.utils.hexToNumber(tx.substr(0,10))).padStart(6,'0')
   const hexId = dett.cacheweb3.utils.padLeft(dett.cacheweb3.utils.toHex(shortLink), 64)
@@ -55,21 +51,6 @@ const syncLinks = async () => {
   })
 
   console.log('#Sync Done')
-}
-
-const saveSitemap = async () => {
-  const prefix = 'https://dett.cc'
-  const f = fs.openSync(sitemapPath, 'w')
-  sitemapIntro(f)
-  {['/', '/about'].forEach(slug => {
-    sitemapWrite(f, prefix + slug)
-  })}
-  fs.writeSync(f, '  <!-- Static pages below are generated; do not edit -->\n')
-  const articals = await Article.findAll()
-  Object.values(articals).forEach(artical => {
-    sitemapWrite(f, prefix + '/s/' + artical.short_link)
-  })
-  sitemapFinalize(f)
 }
 
 const cacheArticles = async () => {
@@ -152,7 +133,6 @@ export const cache = async (updateAccess) => {
 
   await cacheArticles()
   await cacheCommentEvents()
-  await saveSitemap()
 }
 
 const main = async () => {
