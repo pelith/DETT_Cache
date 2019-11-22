@@ -61,7 +61,7 @@ const cacheArticles = async () => {
   let events = []
 
   for (let start = +fromBlock ; start < dett.currentHeight ; start+=(dett.step+1)) {
-    events = await dett.mergedArticles(events, start, start+dett.step)
+    events = await dett.mergedEvents('Posted', events, start, start+dett.step)
   }
 
   // ############################################
@@ -95,7 +95,7 @@ const cacheCommentEvents = async () => {
   let events = []
 
   for (let start = +fromBlock ; start < dett.currentHeight ; start+=(dett.step+1)) {
-    events = await dett.mergedComments(events, start, start+dett.step)
+    events = await dett.mergedEvents('Replied', events, start, start+dett.step)
   }
 
   events.forEach(async (event) => {
