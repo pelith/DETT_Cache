@@ -120,8 +120,8 @@ export const cache = async (updateAccess) => {
 
   const loomProvider =  new LoomProvider({
     chainId: 'default',
-    writeUrl: 'https://loom-basechain.xxxx.nctu.me/rpc',
-    readUrl: 'https://loom-basechain.xxxx.nctu.me/query',
+    writeUrl: 'https://basechain.dappchains.com/rpc',
+    readUrl: 'https://basechain.dappchains.com/query',
     libraryName: 'web3.js',
     web3Api: Web3,
   })
