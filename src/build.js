@@ -160,8 +160,8 @@ export const build = async () => {
 
   const loomProvider =  new LoomProvider({
     chainId: 'default',
-    writeUrl: 'https://basechain.dappchains.com/rpc',
-    readUrl: 'https://basechain.dappchains.com/query',
+    writeUrl: `${process.env.RPC_URL}/rpc`,
+    readUrl: `${process.env.RPC_URL}/query`,
     libraryName: 'web3.js',
     web3Api: Web3,
   })

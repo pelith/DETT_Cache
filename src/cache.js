@@ -20,6 +20,7 @@ initalize()
 
 let dett = null
 let loomWeb3 = null
+const STEP = +process.env.STEP
 let contractOwner = '0x2089f8ef830f4414143686ed0dfac4f5bc0ace04'
 
 const rpcRateLimiter = pRateLimit({
@@ -60,8 +61,8 @@ const cacheArticles = async () => {
   let fromBlock = previousHeight ? previousHeight : dett.fromBlock
   let events = []
 
-  for (let start = +fromBlock ; start < dett.currentHeight ; start+=(dett.step+1)) {
-    events = await dett.mergedEvents('Posted', events, start, start+dett.step)
+  for (let start = +fromBlock ; start < dett.currentHeight ; start+=(STEP+1)) {
+    events = await dett.mergedEvents('Posted', events, start, start+STEP)
   }
 
   // ############################################
@@ -86,7 +87,8 @@ const cacheArticles = async () => {
     })
   }
 
-  await Height.update({ last_block_height: dett.currentHeight - dett.step }, { where: { tag: 'articles' } })
+  if (dett.currentHeight > 0)
+    await Height.update({ last_block_height: dett.currentHeight - STEP }, { where: { tag: 'articles' } })
 }
 
 const cacheCommentEvents = async () => {
@@ -94,8 +96,8 @@ const cacheCommentEvents = async () => {
   let fromBlock = previousHeight ? previousHeight : dett.fromBlock
   let events = []
 
-  for (let start = +fromBlock ; start < dett.currentHeight ; start+=(dett.step+1)) {
-    events = await dett.mergedEvents('Replied', events, start, start+dett.step)
+  for (let start = +fromBlock ; start < dett.currentHeight ; start+=(STEP+1)) {
+    events = await dett.mergedEvents('Replied', events, start, start+STEP)
   }
 
   events.forEach(async (event) => {
@@ -109,7 +111,8 @@ const cacheCommentEvents = async () => {
     })
   })
 
-  await Height.update({ last_block_height: dett.currentHeight - dett.step }, { where: { tag: 'comments' } })
+  if (dett.currentHeight > 0)
+    await Height.update({ last_block_height: dett.currentHeight - STEP }, { where: { tag: 'comments' } })
 }
 
 export const cache = async (updateAccess) => {
@@ -120,8 +123,8 @@ export const cache = async (updateAccess) => {
 
   const loomProvider =  new LoomProvider({
     chainId: 'default',
-    writeUrl: 'https://basechain.dappchains.com/rpc',
-    readUrl: 'https://basechain.dappchains.com/query',
+    writeUrl: `${process.env.RPC_URL}/rpc`,
+    readUrl: `${process.env.RPC_URL}/query`,
     libraryName: 'web3.js',
     web3Api: Web3,
   })
