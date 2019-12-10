@@ -54,7 +54,7 @@ const syncLinks = async () => {
   console.log('#Sync Done')
 }
 
-const cacheArticles = async () => {
+const cacheArticles = async (updateAccess) => {
   await syncLinks()
 
   const previousHeight = (await Height.findOrCreate({ where: { tag: 'articles' } }))[0].dataValues.last_block_height
@@ -74,7 +74,8 @@ const cacheArticles = async () => {
 
       // generate short links
       if (!+(link))
-        link = await addShortLink(tx, blockNumber)
+        if (updateAccess)
+          link = await addShortLink(tx, blockNumber)
 
       await Article.findOrCreate({
         where: {
@@ -133,7 +134,7 @@ export const cache = async (updateAccess) => {
   await dett.init(loomProvider)
   loomWeb3 = dett.loomProvider.library
 
-  await cacheArticles()
+  await cacheArticles(updateAccess)
   await cacheCommentEvents()
 }
 
