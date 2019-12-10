@@ -75,8 +75,7 @@ const cacheArticles = async () => {
 
     // generate short links
     if (!+(link))
-      if (updateAccess)
-        link = await addShortLink(tx, blockNumber)
+      link = await addShortLink(tx, blockNumber)
 
     await Article.findOrCreate({
       where: {
