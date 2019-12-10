@@ -59,59 +59,59 @@ const cacheArticles = async () => {
 
   const previousHeight = (await Height.findOrCreate({ where: { tag: 'articles' } }))[0].dataValues.last_block_height
   let fromBlock = previousHeight ? previousHeight : dett.fromBlock
-  let events = []
-
-  for (let start = +fromBlock ; start < dett.currentHeight ; start+=(STEP+1)) {
-    events = await dett.mergedEvents('Posted', events, start, start+STEP)
-  }
 
   // ############################################
   // #### Generate Cache && Short link
 
-  for (const [i, event] of events.entries()) {
-    const tx = event.transactionHash
-    const blockNumber = event.blockNumber.toString()
-    let link = await dett.BBSCache.methods.links(tx).call({ from: contractOwner })
+  for (let start = +fromBlock ; start < dett.currentHeight ; start+=(STEP+1)) {
+    console.log(`Articles from ${start} to ${start+STEP}`)
+    const events = await dett.BBS.getPastEvents('Posted', {fromBlock : start, toBlock: start+STEP})
 
-    // generate short links
-    if (!+(link))
-      link = await addShortLink(tx, blockNumber)
+    for (const [i, event] of events.entries()) {
+      const tx = event.transactionHash
+      const blockNumber = event.blockNumber.toString()
+      let link = await dett.BBSCache.methods.links(tx).call({ from: contractOwner })
 
-    await Article.findOrCreate({
-      where: {
-        block_number: blockNumber,
-        txid: tx,
-        short_link: loomWeb3.utils.hexToUtf8(link),
-      }
-    })
+      // generate short links
+      if (!+(link))
+        link = await addShortLink(tx, blockNumber)
+
+      await Article.findOrCreate({
+        where: {
+          block_number: blockNumber,
+          txid: tx,
+          short_link: loomWeb3.utils.hexToUtf8(link),
+        }
+      })
+    }
+
+    if (dett.currentHeight > 0)
+      await Height.update({ last_block_height: dett.currentHeight - STEP }, { where: { tag: 'articles' } })
   }
-
-  if (dett.currentHeight > 0)
-    await Height.update({ last_block_height: dett.currentHeight - STEP }, { where: { tag: 'articles' } })
 }
 
 const cacheCommentEvents = async () => {
   const previousHeight = (await Height.findOrCreate({ where: { tag: 'comments' } }))[0].dataValues.last_block_height
   let fromBlock = previousHeight ? previousHeight : dett.fromBlock
-  let events = []
 
   for (let start = +fromBlock ; start < dett.currentHeight ; start+=(STEP+1)) {
-    events = await dett.mergedEvents('Replied', events, start, start+STEP)
-  }
+    console.log(`Comments from ${start} to ${start+STEP}`)
+    const events = await dett.BBS.getPastEvents('Replied', {fromBlock : start, toBlock: start+STEP})
 
-  events.forEach(async (event) => {
-    await CommentEvent.findOrCreate({
-      where: {
-        block_number: event.blockNumber,
-        txid: event.transactionHash,
-        article_txid: event.returnValues.origin,
-        event: JSON.stringify(event),
-      }
+    events.forEach(async (event) => {
+      await CommentEvent.findOrCreate({
+        where: {
+          block_number: event.blockNumber,
+          txid: event.transactionHash,
+          article_txid: event.returnValues.origin,
+          event: JSON.stringify(event),
+        }
+      })
     })
-  })
 
-  if (dett.currentHeight > 0)
-    await Height.update({ last_block_height: dett.currentHeight - STEP }, { where: { tag: 'comments' } })
+    if (dett.currentHeight > 0)
+      await Height.update({ last_block_height: dett.currentHeight - STEP }, { where: { tag: 'comments' } })
+  }
 }
 
 export const cache = async (updateAccess) => {
