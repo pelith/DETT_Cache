@@ -16,6 +16,11 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.BIGINT(64),
       allowNull: false,
       defaultValue: 0,
+    },
+    last_update_height: {
+      type: DataTypes.BIGINT(64),
+      allowNull: false,
+      defaultValue: 0,
     }
   }, {
     tableName: 'height',

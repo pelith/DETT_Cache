@@ -56,6 +56,14 @@ const saveLocalStorage = () => {
 }
 
 const buildSitemap = async () => {
+  const height = await Height.findOne({ where: { tag: 'articles' } })
+  const latestRecord = await Article.findAll({
+    limit: 1,
+    order: [[ 'block_number', 'DESC' ]]
+  })
+
+  if (height.last_update_height == latestRecord[0].dataValues.block_number) return
+
   const prefix = 'https://dett.cc'
   const f = fs.openSync(sitemapPath, 'w')
   sitemapIntro(f)
@@ -71,6 +79,14 @@ const buildSitemap = async () => {
 }
 
 const buildPageCache = async () => {
+  const height = await Height.findOne({ where: { tag: 'articles' } })
+  const latestRecord = await Article.findAll({
+    limit: 1,
+    order: [[ 'block_number', 'DESC' ]]
+  })
+
+  if (height.last_update_height == latestRecord[0].dataValues.block_number) return
+
   // if exist create output folder
   if (!(fs.existsSync(outputPageCachePath) && fs.lstatSync(outputPageCachePath).isDirectory()))
     fs.mkdirSync(outputPageCachePath)
@@ -86,9 +102,19 @@ const buildPageCache = async () => {
     const filePath = path.join(outputPageCachePath, pageSize-page + '.json')
     fs.writeFileSync(filePath, JSON.stringify(cacheData), 'utf8')
   }
+
+  await Height.update({ last_update_height: latestRecord[0].dataValues.block_number }, { where: { tag: 'articles' } })
 }
 
 const buildCommentCache = async () => {
+  const height = await Height.findOne({ where: { tag: 'comments' } })
+  const latestRecord = await CommentEvent.findAll({
+    limit: 1,
+    order: [[ 'block_number', 'DESC' ]]
+  })
+
+  if (height.last_update_height == latestRecord[0].dataValues.block_number) return
+
   // if exist create output folder
   if (!(fs.existsSync(outputCommentCachePath) && fs.lstatSync(outputCommentCachePath).isDirectory()))
     fs.mkdirSync(outputCommentCachePath)
@@ -122,6 +148,7 @@ const buildCommentCache = async () => {
   })
 
   await Promise.all(builder)
+  await Height.update({ last_update_height: latestRecord[0].dataValues.block_number }, { where: { tag: 'comments' } })
 }
 
 const generateShortLinkCachePage = async (tx, shortLink) => {
