@@ -1,6 +1,5 @@
 .env
 keystore.json
-package-lock.json
 gh-pages/
 netlify/
 dist/
